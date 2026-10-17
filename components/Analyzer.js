@@ -70,6 +70,8 @@ export default function Analyzer() {
   const [symbol, setSymbol] = useState(MARKETS.crypto.symbols[0].s);
   const [tf, setTf] = useState("4H");
   const [csv, setCsv] = useState(null);
+  const [chartView, setChartView] = useState("chartlens");
+  const showCustomChart = Boolean(csv) || chartView === "chartlens";
   const [ov, setOv] = useState({ smc: true, fvg: true, sweeps: true, fib: false, amd: false, vp: true, avwap: false, ema: false, levels: false });
   const [pane, setPane] = useState("rsi");
   const [anchor, setAnchor] = useState({ mode: "rangeLow", t: null });
@@ -175,7 +177,14 @@ export default function Analyzer() {
                     <span className={`tag${src === "demo" ? " demo" : ""}`}>{srcTag}</span>
                   </div>
                   {(feed.note || feed.error) && <p className="rule" style={{ padding: "8px 14px 0", margin: 0 }}>{feed.error || feed.note}</p>}
-                  {csv && <div className="tools">
+                  <div style={{ padding: "12px 14px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
+                    <div className="seg" role="group" aria-label="Chart provider">
+                      <button type="button" aria-pressed={showCustomChart} onClick={() => setChartView("chartlens")}>ChartLens · custom overlays</button>
+                      <button type="button" aria-pressed={!showCustomChart} disabled={Boolean(csv)} onClick={() => setChartView("tradingview")}>TradingView</button>
+                    </div>
+                    {csv && <span className="hint">CSV uploads use ChartLens.</span>}
+                  </div>
+                  {showCustomChart && <div className="tools">
                     <div className="grp" role="group" aria-label="Chart overlays">
                       <span className="eyebrow">Overlays</span>
                       {OVERLAYS.map(([k, label, col]) => (
@@ -197,12 +206,12 @@ export default function Analyzer() {
                       <div className="seg">{[["rsi", "RSI"], ["flow", "Order flow"]].map(([k, l]) => <button key={k} aria-pressed={pane === k} onClick={() => setPane(k)}>{l}</button>)}</div>
                     </div>
                   </div>}
-                  {csv ? (ind ? (
+                  {showCustomChart ? (ind ? (
                     <Chart data={data} ind={ind} vw={vw} ov={ov} pane={pane} plan={plan} fmt={fmt} fmtTime={fmtTime} picking={picking} onPick={onPick} />
                   ) : (
                     <div className="chart-box" style={{ display: "grid", placeItems: "center" }}>{src === "error" ? <p className="err">{feed.error}</p> : <Spinner>Loading candles…</Spinner>}</div>
                   )) : <TradingViewChart market={market} symbol={symbol} timeframe={tf} />}
-                  {csv && ind && <Legend ov={ov} ind={ind} pane={pane} hasVW={!!vw} />}
+                  {showCustomChart && ind && <Legend ov={ov} ind={ind} pane={pane} hasVW={!!vw} />}
                 </div>
                 <LiveScore setup={setup} source={src} />
                 <div className="cards">
@@ -300,6 +309,7 @@ function CsvDialog({ onClose, onLoad }) {
     </dialog>
   );
 }
+
 
 
 
