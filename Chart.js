@@ -44,11 +44,11 @@ export default function Chart({ data, ind, vw, ov, pane, plan, fmt, fmtTime, pic
           id="chart"
           ref={cv}
           style={{
-            width: "100%",
-            height: "100%",
-            display: "block",
-            cursor: picking ? "copy" : "crosshair"
-          }}
+  width: "100%",
+  height: "100%",
+  display: "block",
+  cursor: picking ? "copy" : "crosshair"
+}}
           aria-label="Candlestick chart with smart money concepts, fair value gaps, liquidity sweeps, volume profile and an indicator pane"
           onPointerMove={(e) => { const i = indexAt(e); if (i !== hover) setHover(i); }}
           onPointerLeave={() => setHover(-1)}
