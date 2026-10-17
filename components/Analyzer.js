@@ -1,14 +1,14 @@
 "use client";
-import LiveScore from "./LiveScore";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { MARKETS, TIMEFRAMES } from "@/lib/instruments";
-import { analyze, anchorIndex, anchoredVWAP, computePlan, parseCSV, setupScore, RANGE } from "@/lib/analysis";
+import { setupScore, analyze, anchorIndex, anchoredVWAP, computePlan, parseCSV, RANGE } from "@/lib/analysis";
 import { buildCards } from "@/lib/cards";
 import { buildContext } from "@/lib/context";
 import { makeFmt, makeFmtTime, pct } from "@/lib/format";
 import Chart from "./Chart";
+import TradingViewChart from "./TradingViewChart";
+import LiveScore from "./LiveScore";
 import Report, { Pill, Spinner } from "./Report";
 import TradePlan from "./TradePlan";
 import ScreenshotPanel from "./ScreenshotPanel";
@@ -74,7 +74,7 @@ export default function Analyzer() {
   const [pane, setPane] = useState("rsi");
   const [anchor, setAnchor] = useState({ mode: "rangeLow", t: null });
   const [picking, setPicking] = useState(false);
-  const [planOpts, setPlanOpts] = useState({ side: "auto", entry: null, targets: "levels", r1: 1.5, r2: 3, k: 3, capital: 100000, riskPct: 1 });
+  const [planOpts, setPlanOpts] = useState({ side: "off", entry: null, targets: "levels", r1: 1.5, r2: 3, k: 3, capital: 100000, riskPct: 1 });
   const [ai, setAi] = useState({ busy: false, report: null, error: null, key: null });
   const [csvOpen, setCsvOpen] = useState(false);
 
@@ -99,18 +99,15 @@ export default function Analyzer() {
     return { ind: { ...base, m: { ...m, avwap } }, vw: v };
   }, [base, anchor, data]);
 
-  const setup = useMemo(() => (ind ? setupScore(ind, fmt) : null), [ind, fmt]);
-
-  // "auto" follows the setup score: buy → long, sell → short, wait → no plan.
   const plan = useMemo(() => {
     if (!ind) return null;
-    const side = planOpts.side === "auto" ? (setup?.verdict === "buy" ? "long" : setup?.verdict === "sell" ? "short" : "off") : planOpts.side;
     const entry = planOpts.entry == null || planOpts.entry === "" ? null : parseFloat(planOpts.entry);
-    return computePlan(data, ind, { ...planOpts, side, entry: isFinite(entry) && entry > 0 ? entry : null }, fmt);
-  }, [ind, planOpts, data, fmt, setup]);
+    return computePlan(data, ind, { ...planOpts, entry: isFinite(entry) && entry > 0 ? entry : null }, fmt);
+  }, [ind, planOpts, data, fmt]);
 
+  const setup = useMemo(() => (ind ? setupScore(ind, fmt) : null), [ind, fmt]);
   const cards = useMemo(() => (ind ? buildCards(ind.m, { fmt, fmtTime }) : []), [ind, fmt, fmtTime]);
-  const context = useMemo(() => (ind ? buildContext({ data, ind, sym, market, tf, src, plan, setup }) : null), [ind, data, sym, market, tf, src, plan, setup]);
+  const context = useMemo(() => (ind ? buildContext({ data, ind, sym, market, tf, src, plan }) : null), [ind, data, sym, market, tf, src, plan]);
 
   // A new instrument or timeframe resets the report and a hand-typed entry.
   const key = `${csv ? csv.name : symbol}|${tf}`;
@@ -178,7 +175,7 @@ export default function Analyzer() {
                     <span className={`tag${src === "demo" ? " demo" : ""}`}>{srcTag}</span>
                   </div>
                   {(feed.note || feed.error) && <p className="rule" style={{ padding: "8px 14px 0", margin: 0 }}>{feed.error || feed.note}</p>}
-                  <div className="tools">
+                  {csv && <div className="tools">
                     <div className="grp" role="group" aria-label="Chart overlays">
                       <span className="eyebrow">Overlays</span>
                       {OVERLAYS.map(([k, label, col]) => (
@@ -199,13 +196,13 @@ export default function Analyzer() {
                       <span className="eyebrow">Lower pane</span>
                       <div className="seg">{[["rsi", "RSI"], ["flow", "Order flow"]].map(([k, l]) => <button key={k} aria-pressed={pane === k} onClick={() => setPane(k)}>{l}</button>)}</div>
                     </div>
-                  </div>
-                  {ind ? (
+                  </div>}
+                  {csv ? (ind ? (
                     <Chart data={data} ind={ind} vw={vw} ov={ov} pane={pane} plan={plan} fmt={fmt} fmtTime={fmtTime} picking={picking} onPick={onPick} />
                   ) : (
                     <div className="chart-box" style={{ display: "grid", placeItems: "center" }}>{src === "error" ? <p className="err">{feed.error}</p> : <Spinner>Loading candles…</Spinner>}</div>
-                  )}
-                  {ind && <Legend ov={ov} ind={ind} pane={pane} hasVW={!!vw} />}
+                  )) : <TradingViewChart market={market} symbol={symbol} timeframe={tf} />}
+                  {csv && ind && <Legend ov={ov} ind={ind} pane={pane} hasVW={!!vw} />}
                 </div>
                 <LiveScore setup={setup} source={src} />
                 <div className="cards">
@@ -220,7 +217,7 @@ export default function Analyzer() {
               </div>
 
               <div className="col">
-                <TradePlan opts={planOpts} setOpts={setPlanOpts} plan={plan} setup={setup} fmt={fmt} dec={sym.d} />
+                <TradePlan opts={planOpts} setOpts={setPlanOpts} plan={plan} fmt={fmt} dec={sym.d} />
                 <div className="panel">
                   <div className="panel-head">
                     <div><div className="eyebrow">AI review</div><div className="ptitle">Structured report</div></div>
@@ -245,7 +242,7 @@ export default function Analyzer() {
 
         <footer className="disc">
           <strong>Educational use only.</strong> ChartLens describes market structure, smart money concepts, order flow, liquidity and risk to help you learn to read charts.
-          It does not give investment advice or recommendations and is not registered with SEBI or any regulator. Setup scores and trade plans are calculated mechanically from fixed rules; they are not recommendations to buy or sell.
+          It does not give investment advice or recommendations and is not registered with SEBI or any regulator. Trade plans are calculated mechanically from rules you choose; they are not signals to trade.
           Order flow is estimated from candle data. Demo series are synthetic. Markets carry risk; decisions are yours.
         </footer>
       </div>
@@ -303,4 +300,6 @@ function CsvDialog({ onClose, onLoad }) {
     </dialog>
   );
 }
+
+
 
