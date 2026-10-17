@@ -41,6 +41,7 @@ export default function Chart({ data, ind, vw, ov, pane, plan, fmt, fmtTime, pic
       </div>
       <div className="chart-box">
         <canvas
+          id="chart"
           ref={cv}
           style={{ cursor: picking ? "copy" : "crosshair" }}
           aria-label="Candlestick chart with smart money concepts, fair value gaps, liquidity sweeps, volume profile and an indicator pane"
