@@ -146,3 +146,15 @@ export default function Chart({
     </>
   );
 }
+.chart-box {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chart-box canvas {
+  position: absolute;
+  inset: 4px 6px 8px;
+  width: calc(100% - 12px) !important;
+  height: calc(100% - 12px) !important;
+  display: block;
+}
