@@ -124,12 +124,12 @@ export default function Chart({
         <canvas
           ref={cv}
           style={{
-  width: "100%",
-  height: "100%",
-  display: "block",
-  cursor: picking ? "copy" : "crosshair",
-  touchAction: "pan-y",
-}}
+            width: "100%",
+            height: "100%",
+            display: "block",
+            cursor: picking ? "copy" : "crosshair",
+            touchAction: "pan-y",
+          }}
           aria-label="Candlestick chart with smart money concepts, fair value gaps, liquidity sweeps, volume profile and an indicator pane"
           onPointerMove={(event) => {
             const index = indexAt(event);
