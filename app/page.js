@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import HeroChart from "@/components/HeroChart";
-import WaitlistForm from "@/components/WaitlistForm";
+
 
 const TOOLS = [
   { k: "BOS · CHoCH · OB", h: "Smart money concepts", p: "Breaks of structure, changes of character and the order blocks that caused them, with premium and discount zones." },
@@ -15,25 +15,13 @@ const TOOLS = [
   { k: "Entry · TP1 · TP2 · SL · TSL", h: "Trade plan", p: "Rule-based levels from structure and ATR, reward-to-risk for each target, a trailing stop and position size." },
 ];
 
-const MARKETS = [
-  { h: "Crypto", s: "BTCUSDT · BTCUSD · ETHUSDT · SOLUSDT", p: "Live candles streamed from Binance, around the clock." },
-  { h: "Forex & gold", s: "XAUUSD · EURUSD · GBPUSD · USDJPY · USDINR", p: "Major pairs and gold, refreshed every minute." },
-  { h: "NSE", s: "NIFTY 50 · BANKNIFTY · RELIANCE · HDFCBANK · TCS", p: "Indian indices and large caps on IST session times." },
-];
-
-const STEPS = [
-  { h: "Pick a market and timeframe", p: "Anything from 1-minute to weekly. Or upload a screenshot from TradingView, Kite or MT5." },
-  { h: "Read the map", p: "Structure, order blocks, gaps, sweeps, volume and AMD are drawn for you and scored in plain cards." },
-  { h: "Ask the AI analyst", p: "Get a structured report on what the chart shows, what would confirm it, and what would cancel it. Then ask follow-ups." },
-];
-
 export default function Landing() {
   return (
     <main className="lp">
       <header className="lp-nav lp-in">
         <Link href="/" className="brand" style={{ textDecoration: "none" }}><Logo /><h1>ChartLens</h1></Link>
         <nav className="lp-links">
-          <a href="#tools">Tools</a><a href="#markets">Markets</a><a href="#how">How it works</a>
+          <a href="#tools">Tools</a>
           <Link className="btn primary" href="/app">Open the analyzer</Link>
         </nav>
       </header>
@@ -45,7 +33,7 @@ export default function Landing() {
           <p className="lp-lede">ChartLens maps structure, order blocks, fair value gaps, liquidity sweeps and order flow on your chart, then an AI analyst explains it in plain English.</p>
           <div className="lp-cta">
             <Link className="btn primary lp-big" href="/app">Open the analyzer</Link>
-            <a className="btn lp-big" href="#waitlist">Get early access</a>
+            
           </div>
         </div>
         <HeroChart />
@@ -89,36 +77,6 @@ export default function Landing() {
         </div>
       </section>
 
-      <section id="markets" className="lp-sec lp-in">
-        <div className="lp-sec-head">
-          <p className="eyebrow">Markets</p>
-          <h2 className="lp-h2">From Bitcoin to Bank Nifty</h2>
-          <p className="lp-sub">Eight timeframes on every instrument: 1m, 5m, 15m, 30m, 1H, 4H, 1D and 1W.</p>
-        </div>
-        <div className="lp-markets">
-          {MARKETS.map((m) => (
-            <div key={m.h} className="lp-market"><h3>{m.h}</h3><p className="lp-sym">{m.s}</p><p>{m.p}</p></div>
-          ))}
-        </div>
-      </section>
-
-      <section id="how" className="lp-sec lp-in">
-        <div className="lp-sec-head"><p className="eyebrow">How it works</p><h2 className="lp-h2">Three steps</h2></div>
-        <ol className="lp-steps">
-          {STEPS.map((s, i) => (<li key={s.h}><span className="lp-n">{i + 1}</span><div><h3>{s.h}</h3><p>{s.p}</p></div></li>))}
-        </ol>
-      </section>
-
-      <section id="waitlist" className="lp-band">
-        <div className="lp-in lp-wl">
-          <div>
-            <h2 className="lp-h2">Get early access</h2>
-            <p className="lp-sub">Leave your email and we&apos;ll let you know when accounts open.</p>
-          </div>
-          <WaitlistForm />
-        </div>
-      </section>
-
       <footer className="lp-foot lp-in">
         <div className="brand"><Logo size={24} /><strong>ChartLens</strong></div>
         <p className="disc"><strong>Educational use only.</strong> ChartLens explains market structure and risk to help you learn to read charts. It does not give investment advice or recommendations and is not registered with SEBI or any regulator. Trade plans are calculated mechanically from rules you choose. Order flow is estimated from candle data. Trading carries risk of loss; decisions are yours.</p>
@@ -127,3 +85,4 @@ export default function Landing() {
     </main>
   );
 }
+
