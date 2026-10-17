@@ -1,3 +1,4 @@
+
 # ChartLens
 
 AI chart analysis for crypto, forex, gold and NSE. One Next.js project with:
