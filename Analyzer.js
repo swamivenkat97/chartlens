@@ -1,8 +1,10 @@
 "use client";
+import LiveScore from "./LiveScore";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { MARKETS, TIMEFRAMES } from "@/lib/instruments";
-import { analyze, anchorIndex, anchoredVWAP, computePlan, parseCSV, RANGE } from "@/lib/analysis";
+import { analyze, anchorIndex, anchoredVWAP, computePlan, parseCSV, setupScore, RANGE } from "@/lib/analysis";
 import { buildCards } from "@/lib/cards";
 import { buildContext } from "@/lib/context";
 import { makeFmt, makeFmtTime, pct } from "@/lib/format";
@@ -72,7 +74,7 @@ export default function Analyzer() {
   const [pane, setPane] = useState("rsi");
   const [anchor, setAnchor] = useState({ mode: "rangeLow", t: null });
   const [picking, setPicking] = useState(false);
-  const [planOpts, setPlanOpts] = useState({ side: "off", entry: null, targets: "levels", r1: 1.5, r2: 3, k: 3, capital: 100000, riskPct: 1 });
+  const [planOpts, setPlanOpts] = useState({ side: "auto", entry: null, targets: "levels", r1: 1.5, r2: 3, k: 3, capital: 100000, riskPct: 1 });
   const [ai, setAi] = useState({ busy: false, report: null, error: null, key: null });
   const [csvOpen, setCsvOpen] = useState(false);
 
@@ -97,14 +99,18 @@ export default function Analyzer() {
     return { ind: { ...base, m: { ...m, avwap } }, vw: v };
   }, [base, anchor, data]);
 
+  const setup = useMemo(() => (ind ? setupScore(ind, fmt) : null), [ind, fmt]);
+
+  // "auto" follows the setup score: buy → long, sell → short, wait → no plan.
   const plan = useMemo(() => {
     if (!ind) return null;
+    const side = planOpts.side === "auto" ? (setup?.verdict === "buy" ? "long" : setup?.verdict === "sell" ? "short" : "off") : planOpts.side;
     const entry = planOpts.entry == null || planOpts.entry === "" ? null : parseFloat(planOpts.entry);
-    return computePlan(data, ind, { ...planOpts, entry: isFinite(entry) && entry > 0 ? entry : null }, fmt);
-  }, [ind, planOpts, data, fmt]);
+    return computePlan(data, ind, { ...planOpts, side, entry: isFinite(entry) && entry > 0 ? entry : null }, fmt);
+  }, [ind, planOpts, data, fmt, setup]);
 
   const cards = useMemo(() => (ind ? buildCards(ind.m, { fmt, fmtTime }) : []), [ind, fmt, fmtTime]);
-  const context = useMemo(() => (ind ? buildContext({ data, ind, sym, market, tf, src, plan }) : null), [ind, data, sym, market, tf, src, plan]);
+  const context = useMemo(() => (ind ? buildContext({ data, ind, sym, market, tf, src, plan, setup }) : null), [ind, data, sym, market, tf, src, plan, setup]);
 
   // A new instrument or timeframe resets the report and a hand-typed entry.
   const key = `${csv ? csv.name : symbol}|${tf}`;
@@ -201,6 +207,7 @@ export default function Analyzer() {
                   )}
                   {ind && <Legend ov={ov} ind={ind} pane={pane} hasVW={!!vw} />}
                 </div>
+                <LiveScore setup={setup} source={src} />
                 <div className="cards">
                   {cards.map((c, ix) => (
                     <div key={c.h} className={`panel card${cards.length % 2 && ix === cards.length - 1 ? " wide" : ""}`}>
@@ -213,7 +220,7 @@ export default function Analyzer() {
               </div>
 
               <div className="col">
-                <TradePlan opts={planOpts} setOpts={setPlanOpts} plan={plan} fmt={fmt} dec={sym.d} />
+                <TradePlan opts={planOpts} setOpts={setPlanOpts} plan={plan} setup={setup} fmt={fmt} dec={sym.d} />
                 <div className="panel">
                   <div className="panel-head">
                     <div><div className="eyebrow">AI review</div><div className="ptitle">Structured report</div></div>
@@ -238,7 +245,7 @@ export default function Analyzer() {
 
         <footer className="disc">
           <strong>Educational use only.</strong> ChartLens describes market structure, smart money concepts, order flow, liquidity and risk to help you learn to read charts.
-          It does not give investment advice or recommendations and is not registered with SEBI or any regulator. Trade plans are calculated mechanically from rules you choose; they are not signals to trade.
+          It does not give investment advice or recommendations and is not registered with SEBI or any regulator. Setup scores and trade plans are calculated mechanically from fixed rules; they are not recommendations to buy or sell.
           Order flow is estimated from candle data. Demo series are synthetic. Markets carry risk; decisions are yours.
         </footer>
       </div>
@@ -296,3 +303,4 @@ function CsvDialog({ onClose, onLoad }) {
     </dialog>
   );
 }
+
