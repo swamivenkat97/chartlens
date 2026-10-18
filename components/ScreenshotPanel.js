@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Report, { Spinner } from "./Report";
+import ScreenshotPlan from "./ScreenshotPlan";
 
 // Downsize to ≤1568px on the long side (what the vision model uses anyway) and keep the upload small.
 async function prepare(file) {
@@ -71,9 +72,9 @@ export default function ScreenshotPanel() {
         <div className="panel">
           <div className="panel-head"><div><div className="eyebrow">AI review</div><div className="ptitle">What the chart shows</div></div></div>
           <div className="report">
-            {busy ? <Spinner>Reading the screenshot…</Spinner> : report ? <Report report={report} /> : (
+            {busy ? <Spinner>Reading the screenshot…</Spinner> : report ? <><ScreenshotPlan plan={report.screenshotPlan} /><Report report={report} /></> : (
               <div className="empty"><span>Upload a screenshot and the AI reads it for:</span>
-                <ul><li>Trend, structure, BOS and CHoCH</li><li>Order blocks, fair value gaps and liquidity sweeps</li><li>Momentum from visible indicators</li><li>Volatility and the levels that would change the picture</li></ul>
+                <ul><li>Trend, structure, BOS and CHoCH</li><li>Order blocks, fair value gaps and liquidity sweeps</li><li>Momentum from visible indicators</li><li>Conditional direction, entry area, SL, TP1, TP2 and trailing-stop rule</li><li>Wait when price levels or confirmation are unclear</li></ul>
               </div>
             )}
             {err && <p className="err">{err}</p>}
@@ -83,3 +84,4 @@ export default function ScreenshotPanel() {
     </div>
   );
 }
+
