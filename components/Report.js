@@ -17,7 +17,7 @@ export default function Report({ report, context }) {
     <>
       <div className="bias">
         <Pill tone={TONE[bias] || "flat"}>{bias.charAt(0).toUpperCase() + bias.slice(1)} read</Pill>
-        <span className="eyebrow">Clarity {clarity}</span>
+        <span className="eyebrow">{report.mode === "rules" ? "Data coverage" : "Clarity"} {clarity}</span>
         <div className="meter" aria-hidden="true"><span style={{ width: `${clarity}%` }} /></div>
       </div>
       <p className="summary">{report.summary}</p>
@@ -43,7 +43,7 @@ export default function Report({ report, context }) {
       {Array.isArray(report.lessons) && report.lessons.length > 0 && (
         <div className="sec"><h4>Learn from this chart</h4><ul>{report.lessons.map((p, i) => <li key={i}>{p}</li>)}</ul></div>
       )}
-      {context && <Ask context={context} report={report} />}
+      {context && report.mode !== "rules" && <Ask context={context} report={report} />}
     </>
   );
 }
@@ -79,3 +79,4 @@ function Ask({ context, report }) {
     </div>
   );
 }
+
