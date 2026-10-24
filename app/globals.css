@@ -115,6 +115,7 @@ canvas#chart{width:100%;height:100%;display:block;cursor:crosshair;touch-action:
 .pill.flat{background:var(--surface-2);color:var(--muted)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
 dl.kv{margin:0;display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:13px}
 dl.kv dt{color:var(--muted)} dl.kv dd{margin:0;text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+dl.kv>div{display:contents}
 .card p.note{margin:0;font-size:13px;color:var(--muted)}
 
 .report{padding:16px;display:flex;flex-direction:column;gap:16px}
@@ -152,6 +153,21 @@ table.lv td.l{font-weight:600;white-space:nowrap;padding-right:10px}
 .drop strong{font-family:var(--display);font-size:17px}
 .shot-ctl{display:flex;gap:10px;flex-wrap:wrap;padding:0 14px 14px;align-items:flex-end}
 .shot-ctl input[type=text]{border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:7px 10px;min-width:0}
+.shot-ctl input[type=number]{width:100%;min-width:0;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:7px 10px}
+.shot-ctl select{max-width:100%;min-width:0}
+.shot-checks{margin-top:10px}
+.shot-checks ul{padding-left:18px}
+.review-intro{padding:0 14px 14px;font-size:13px}
+.review-intro .btn{margin-top:14px}
+.review-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px}
+.review-fields input,.review-fields select{width:100%;min-width:0;border:1px solid var(--line);background:var(--surface-2);border-radius:7px;padding:7px 9px}
+.review-group{border-top:1px solid var(--line);padding:12px 0}
+.review-group>summary{cursor:pointer;padding:0 14px;font-weight:600;font-size:13px}
+.review-checks{padding:0 14px;display:grid;gap:12px;font-size:13px}
+.review-checks label{display:flex;align-items:flex-start;gap:9px}
+.review-checks input{margin-top:3px;flex-shrink:0}
+.screenshot-review .sec p{overflow-wrap:anywhere}
+@media(max-width:520px){.review-fields{grid-template-columns:1fr}.screenshot-review .sec-h{flex-wrap:wrap}.screenshot-review dl.kv{grid-template-columns:1fr}.screenshot-review dl.kv dd{text-align:left}}
 
 dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--fg);max-width:min(560px,92vw);padding:18px}
 dialog::backdrop{background:rgba(0,0,0,.45)}

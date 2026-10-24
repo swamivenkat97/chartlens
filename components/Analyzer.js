@@ -23,10 +23,11 @@ const WS_URL = "wss://stream.binance.com:9443/ws/";
 
 /* Loads candles for the chosen instrument and keeps them current:
    Binance pairs stream over a browser WebSocket; Twelve Data markets poll; demo data is static. */
-function useCandles(market, symbol, tf, csv) {
+function useCandles(market, symbol, tf, csv, enabled = true) {
   const [state, setState] = useState({ candles: [], source: "loading", note: null, live: false, error: null });
   const buf = useRef([]);
   useEffect(() => {
+    if (!enabled) return;
     if (csv) { setState({ candles: csv.rows, source: "csv", note: null, live: false, error: null }); return; }
     let alive = true, ws = null, poll = null, flush = null, retry = null, dirty = false;
     setState((s) => ({ ...s, source: "loading", error: null }));
@@ -60,12 +61,12 @@ function useCandles(market, symbol, tf, csv) {
       else if (j.poll) poll = setInterval(load, j.poll * 1000);
     });
     return () => { alive = false; clearInterval(poll); clearInterval(flush); clearTimeout(retry); if (ws) { ws.onclose = null; ws.close(); } };
-  }, [market, symbol, tf, csv]);
+  }, [market, symbol, tf, csv, enabled]);
   return state;
 }
 
 export default function Analyzer() {
-  const [mode, setMode] = useState("ticker");
+  const [mode, setMode] = useState("shot");
   const [market, setMarket] = useState("crypto");
   const [symbol, setSymbol] = useState(MARKETS.crypto.symbols[0].s);
   const [tf, setTf] = useState("4H");
@@ -81,7 +82,7 @@ export default function Analyzer() {
   const [csvOpen, setCsvOpen] = useState(false);
 
   const sym = csv ? { s: csv.name, n: "Your data", d: csv.d } : MARKETS[market].symbols.find((x) => x.s === symbol);
-  const feed = useCandles(market, symbol, tf, csv);
+  const feed = useCandles(market, symbol, tf, csv, mode === "ticker");
   const data = feed.candles;
   const src = feed.source;
 
@@ -142,7 +143,7 @@ export default function Analyzer() {
           </Link>
           <div className="modes" role="group" aria-label="Analysis mode">
             <button aria-pressed={mode === "ticker"} onClick={() => setMode("ticker")}>Ticker analysis</button>
-            <button aria-pressed={mode === "shot"} onClick={() => setMode("shot")}>Screenshot analysis</button>
+            <button aria-pressed={mode === "shot"} onClick={() => setMode("shot")}>Chart + live analysis</button>
           </div>
         </header>
 
