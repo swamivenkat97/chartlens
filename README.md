@@ -30,34 +30,42 @@ npm run dev                  # http://localhost:3000
 
 | Variable | Needed for | Notes |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | AI reports, screenshots, follow-up questions | From console.anthropic.com |
-| `ANTHROPIC_MODEL` | Reports and screenshot reading | Default `claude-sonnet-5-5` |
+| `ANTHROPIC_API_KEY` | Optional ticker AI reports and follow-up questions; not screenshot review | From console.anthropic.com |
+| `ANTHROPIC_MODEL` | Optional ticker AI reports | Default `claude-sonnet-5-5` |
 | `ANTHROPIC_FAST_MODEL` | Follow-up questions | Default `claude-haiku-5-5` |
 | `TWELVE_DATA_API_KEY` | Forex, gold, NSE, BTCUSD candles | Without it these markets show demo data |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Waitlist | Set by the Upstash integration |
 | `AI_RATE_LIMIT_PER_HOUR` | Abuse protection | Default 30 AI calls per IP per hour, per server instance |
 
-## Screenshot analysis modes
+## Screenshot technical review — no AI
 
-The screenshot tab replaces the general screenshot review with seven selectable modes:
-market structure, VWAP + 9/21 EMA, momentum scalper, breakout scanner (default),
-opening range, reversal scanner and final trade validator. Existing Gemini / Anthropic
-provider configuration is unchanged. This does not change the live candle analyzer.
+The screenshot tab runs all seven techniques together: market structure,
+VWAP + 9/21 EMA, momentum scalper, breakout scanner, opening range, reversal
+scanner and final trade validator. It uses fixed rules and manual observations.
+No API key or market feed is required for this tab. The screenshot is displayed
+locally and is not uploaded. The old `/api/vision` route returns HTTP 410 and
+never invokes Gemini or Anthropic. Existing ticker analysis is a separate feature.
+The analyzer opens on screenshot review by default and pauses candle-feed requests
+while this tab is selected.
 
-Upload a combined screenshot showing 5m + 15m charts (1m + 5m for momentum),
-with readable axes, timestamps and the selected mode's indicators. Opening range
-requires an explicit session/date/first 15-minute interval and chart timezone.
-The validator also requires the user's direction, entry, SL, TP1 and TP2.
+This is not automated image recognition. Users enter chart prices, indicator
+readings, zone boundaries, proposed trade levels and completed-candle confirmation.
+Use matching 5m/15m charts and 1m/5m charts for momentum. Unknown observations
+remain blank. A replacement image clears observations and every edit clears results.
 
-BUY/SELL requires completed-candle evidence and all required mode checks;
-missing/conflicting confirmation returns WAIT / NO TRADE. Validator results are
-APPROVE, WAIT or REJECT. The server validates price ordering, preserves the
-validator's proposed prices and computes R:R from the worst entry in the range.
-TP1 must offer at least 2:1 before costs. Momentum confidence is evidence quality,
-not a calibrated probability. Screenshot evidence is model-interpreted, not an
-independent live-data verification. No market monitoring or order execution occurs.
+Each technique returns BUY/SELL only when its required checks pass. Missing or
+conflicting checks produce NO TRADE; the validator returns APPROVE, WAIT or REJECT.
+Overall BUY/SELL requires all six scanners plus the validator to pass. Results are
+conditional on user-entered observations and do not independently verify the chart.
+Confidence is labeled checklist completeness, never a win probability.
 
-Run the confirmation/risk regression checks with `node --test tests/screenshot-modes.test.mjs`.
+Thresholds: volume >= 1.5 times the previous 20 bars' average, directional price /
+VWAP / EMA9 / EMA21 alignment, 1m RSI 55–70 for BUY or 30–45 for SELL, and TP1
+R:R >= 2:1 before costs. Entries, stops and targets come from the user, not the image.
+Opening range requires the specified session/date/interval and completion check.
+No orders, trailing stops or market monitoring are performed.
+
+Run checks with `node --test tests/screenshot-review.test.mjs`.
 
 ## Where the data comes from
 
@@ -80,7 +88,7 @@ app/
   app/page.js          Analyzer page (/app)
   api/candles          Binance / Twelve Data / demo candles
   api/analyze          AI report from computed metrics (Claude API)
-  api/vision           AI reading of an uploaded screenshot
+  api/vision           Retired AI endpoint (HTTP 410)
   api/ask              Follow-up questions on a report
   api/waitlist         Saves emails to Upstash Redis
 components/            React UI (Analyzer, Chart, TradePlan, Report, ScreenshotPanel, landing parts)
