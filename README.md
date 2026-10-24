@@ -37,6 +37,28 @@ npm run dev                  # http://localhost:3000
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Waitlist | Set by the Upstash integration |
 | `AI_RATE_LIMIT_PER_HOUR` | Abuse protection | Default 30 AI calls per IP per hour, per server instance |
 
+## Screenshot analysis modes
+
+The screenshot tab replaces the general screenshot review with seven selectable modes:
+market structure, VWAP + 9/21 EMA, momentum scalper, breakout scanner (default),
+opening range, reversal scanner and final trade validator. Existing Gemini / Anthropic
+provider configuration is unchanged. This does not change the live candle analyzer.
+
+Upload a combined screenshot showing 5m + 15m charts (1m + 5m for momentum),
+with readable axes, timestamps and the selected mode's indicators. Opening range
+requires an explicit session/date/first 15-minute interval and chart timezone.
+The validator also requires the user's direction, entry, SL, TP1 and TP2.
+
+BUY/SELL requires completed-candle evidence and all required mode checks;
+missing/conflicting confirmation returns WAIT / NO TRADE. Validator results are
+APPROVE, WAIT or REJECT. The server validates price ordering, preserves the
+validator's proposed prices and computes R:R from the worst entry in the range.
+TP1 must offer at least 2:1 before costs. Momentum confidence is evidence quality,
+not a calibrated probability. Screenshot evidence is model-interpreted, not an
+independent live-data verification. No market monitoring or order execution occurs.
+
+Run the confirmation/risk regression checks with `node --test tests/screenshot-modes.test.mjs`.
+
 ## Where the data comes from
 
 | Market | Source | Updates |
