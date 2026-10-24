@@ -57,7 +57,7 @@ candles plus 0.1 ATR; TP1 and TP2 are 2R and 3R. A nearer opposing 1H level with
 after costs, then trail newly confirmed 5m swings with an ATR buffer, never widening.
 No stop or order is executed or actively managed.
 
-XAUUSD requires `TWELVE_DATA_API_KEY` in Vercel. Check coverage for all four
+The upload selector offers XAUUSD and BTCUSD, mapped to Twelve Data XAU/USD and BTC/USD. Both require `TWELVE_DATA_API_KEY` in Vercel. Check coverage for all four
 intervals and volume. No AI key is used. Every uncached refresh needs four provider
 time-series requests; the 60-second cache is per server instance, not a global limit.
 Failed, insufficient, stale, duplicate or gapped data blocks signals. Missing volume
