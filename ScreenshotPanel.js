@@ -1,2 +1,2 @@
-// Compatibility entry point; the screenshot review uses no AI or market feed.
+// Compatibility entry point for the automatic market-data technical scanner.
 export { default } from "./components/ScreenshotPanel";
