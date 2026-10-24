@@ -1,3 +1,2 @@
-"use client";
-// Compatibility with existing imports; replaces the manual screenshot form.
-export { default } from "./ScreenshotLiveAnalysis";
+// Compatibility entry point for the automatic market-data technical scanner.
+export { default } from "./components/ScreenshotPanel";

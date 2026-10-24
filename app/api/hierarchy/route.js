@@ -1,7 +1,7 @@
 import { analyzeHierarchy, hierarchyWait, FRAME_MS } from "@/lib/hierarchy-analysis.mjs";
 export const dynamic="force-dynamic";
 export const maxDuration=30;
-const symbols={XAUUSD:{td:"XAU/USD"},BTCUSDT:{binance:"BTCUSDT"},ETHUSDT:{binance:"ETHUSDT"}};
+const symbols={XAUUSD:{td:"XAU/USD"},BTCUSD:{td:"BTC/USD"}};
 const intervals={"4H":{td:"4h",binance:"4h"},"1H":{td:"1h",binance:"1h"},"15m":{td:"15min",binance:"15m"},"5m":{td:"5min",binance:"5m"}};
 const cache=new Map(),pending=new Map();
 const reply=data=>Response.json(data,{headers:{"Cache-Control":"no-store"}});

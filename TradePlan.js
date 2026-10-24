@@ -15,14 +15,14 @@ export default function TradePlan({ opts, setOpts, plan: P, fmt, dec }) {
       <div className="panel-head">
         <div><div className="eyebrow">Trade plan</div><div className="ptitle">Entry, targets &amp; stops</div></div>
         <div className="seg" role="group" aria-label="Plan direction">
-          {["auto", "off", "long", "short"].map((k) => (
+          {["off", "long", "short"].map((k) => (
             <button key={k} aria-pressed={opts.side === k} onClick={() => setOpts((o) => ({ ...o, side: k }))}>{k[0].toUpperCase() + k.slice(1)}</button>
           ))}
         </div>
       </div>
       <div className="plan">
         {!P ? (
-          <p className="rule">Choose Auto for a direction from indicator rules, or Long/Short for a manual override. Auto waits for a clear score and real data. Levels are a changing setup preview; TSL is projected after TP1, not an active order.</p>
+          <p className="rule">Choose Long or Short to plot an entry, TP1, TP2, stop-loss and trailing stop on the chart. Levels come from fixed rules applied to this chart&apos;s structure, liquidity and ATR.</p>
         ) : (
           <>
             <div className="plan-form">
@@ -61,5 +61,3 @@ export default function TradePlan({ opts, setOpts, plan: P, fmt, dec }) {
     </div>
   );
 }
-
-

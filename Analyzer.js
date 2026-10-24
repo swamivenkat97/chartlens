@@ -1,14 +1,14 @@
 "use client";
+import LiveScore from "./LiveScore";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { MARKETS, TIMEFRAMES } from "@/lib/instruments";
-import { setupScore, analyze, anchorIndex, anchoredVWAP, computePlan, parseCSV, RANGE } from "@/lib/analysis";
+import { analyze, anchorIndex, anchoredVWAP, computePlan, parseCSV, setupScore, RANGE } from "@/lib/analysis";
 import { buildCards } from "@/lib/cards";
 import { buildContext } from "@/lib/context";
 import { makeFmt, makeFmtTime, pct } from "@/lib/format";
 import Chart from "./Chart";
-import TradingViewChart from "./TradingViewChart";
-import LiveScore from "./LiveScore";
 import Report, { Pill, Spinner } from "./Report";
 import TradePlan from "./TradePlan";
 import ScreenshotPanel from "./ScreenshotPanel";
@@ -23,11 +23,10 @@ const WS_URL = "wss://stream.binance.com:9443/ws/";
 
 /* Loads candles for the chosen instrument and keeps them current:
    Binance pairs stream over a browser WebSocket; Twelve Data markets poll; demo data is static. */
-function useCandles(market, symbol, tf, csv, enabled = true) {
+function useCandles(market, symbol, tf, csv) {
   const [state, setState] = useState({ candles: [], source: "loading", note: null, live: false, error: null });
   const buf = useRef([]);
   useEffect(() => {
-    if (!enabled) return;
     if (csv) { setState({ candles: csv.rows, source: "csv", note: null, live: false, error: null }); return; }
     let alive = true, ws = null, poll = null, flush = null, retry = null, dirty = false;
     setState((s) => ({ ...s, source: "loading", error: null }));
@@ -61,28 +60,26 @@ function useCandles(market, symbol, tf, csv, enabled = true) {
       else if (j.poll) poll = setInterval(load, j.poll * 1000);
     });
     return () => { alive = false; clearInterval(poll); clearInterval(flush); clearTimeout(retry); if (ws) { ws.onclose = null; ws.close(); } };
-  }, [market, symbol, tf, csv, enabled]);
+  }, [market, symbol, tf, csv]);
   return state;
 }
 
 export default function Analyzer() {
-  const [mode, setMode] = useState("shot");
+  const [mode, setMode] = useState("ticker");
   const [market, setMarket] = useState("crypto");
   const [symbol, setSymbol] = useState(MARKETS.crypto.symbols[0].s);
   const [tf, setTf] = useState("4H");
   const [csv, setCsv] = useState(null);
-  const [chartView, setChartView] = useState("chartlens");
-  const showCustomChart = Boolean(csv) || chartView === "chartlens";
   const [ov, setOv] = useState({ smc: true, fvg: true, sweeps: true, fib: false, amd: false, vp: true, avwap: false, ema: false, levels: false });
   const [pane, setPane] = useState("rsi");
   const [anchor, setAnchor] = useState({ mode: "rangeLow", t: null });
   const [picking, setPicking] = useState(false);
-  const [planOpts, setPlanOpts] = useState({ side: "off", entry: null, targets: "levels", r1: 1.5, r2: 3, k: 3, capital: 100000, riskPct: 1 });
+  const [planOpts, setPlanOpts] = useState({ side: "auto", entry: null, targets: "levels", r1: 1.5, r2: 3, k: 3, capital: 100000, riskPct: 1 });
   const [ai, setAi] = useState({ busy: false, report: null, error: null, key: null });
   const [csvOpen, setCsvOpen] = useState(false);
 
   const sym = csv ? { s: csv.name, n: "Your data", d: csv.d } : MARKETS[market].symbols.find((x) => x.s === symbol);
-  const feed = useCandles(market, symbol, tf, csv, mode === "ticker");
+  const feed = useCandles(market, symbol, tf, csv);
   const data = feed.candles;
   const src = feed.source;
 
@@ -102,15 +99,18 @@ export default function Analyzer() {
     return { ind: { ...base, m: { ...m, avwap } }, vw: v };
   }, [base, anchor, data]);
 
+  const setup = useMemo(() => (ind ? setupScore(ind, fmt) : null), [ind, fmt]);
+
+  // "auto" follows the setup score: buy → long, sell → short, wait → no plan.
   const plan = useMemo(() => {
     if (!ind) return null;
+    const side = planOpts.side === "auto" ? (setup?.verdict === "buy" ? "long" : setup?.verdict === "sell" ? "short" : "off") : planOpts.side;
     const entry = planOpts.entry == null || planOpts.entry === "" ? null : parseFloat(planOpts.entry);
-    return computePlan(data, ind, { ...planOpts, entry: isFinite(entry) && entry > 0 ? entry : null }, fmt);
-  }, [ind, planOpts, data, fmt]);
+    return computePlan(data, ind, { ...planOpts, side, entry: isFinite(entry) && entry > 0 ? entry : null }, fmt);
+  }, [ind, planOpts, data, fmt, setup]);
 
-  const setup = useMemo(() => (ind ? setupScore(ind, fmt) : null), [ind, fmt]);
   const cards = useMemo(() => (ind ? buildCards(ind.m, { fmt, fmtTime }) : []), [ind, fmt, fmtTime]);
-  const context = useMemo(() => (ind ? buildContext({ data, ind, sym, market, tf, src, plan }) : null), [ind, data, sym, market, tf, src, plan]);
+  const context = useMemo(() => (ind ? buildContext({ data, ind, sym, market, tf, src, plan, setup }) : null), [ind, data, sym, market, tf, src, plan, setup]);
 
   // A new instrument or timeframe resets the report and a hand-typed entry.
   const key = `${csv ? csv.name : symbol}|${tf}`;
@@ -143,7 +143,7 @@ export default function Analyzer() {
           </Link>
           <div className="modes" role="group" aria-label="Analysis mode">
             <button aria-pressed={mode === "ticker"} onClick={() => setMode("ticker")}>Ticker analysis</button>
-            <button aria-pressed={mode === "shot"} onClick={() => setMode("shot")}>Chart + live analysis</button>
+            <button aria-pressed={mode === "shot"} onClick={() => setMode("shot")}>Screenshot analysis</button>
           </div>
         </header>
 
@@ -178,14 +178,7 @@ export default function Analyzer() {
                     <span className={`tag${src === "demo" ? " demo" : ""}`}>{srcTag}</span>
                   </div>
                   {(feed.note || feed.error) && <p className="rule" style={{ padding: "8px 14px 0", margin: 0 }}>{feed.error || feed.note}</p>}
-                  <div style={{ padding: "12px 14px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
-                    <div className="seg" role="group" aria-label="Chart provider">
-                      <button type="button" aria-pressed={showCustomChart} onClick={() => setChartView("chartlens")}>ChartLens · custom overlays</button>
-                      <button type="button" aria-pressed={!showCustomChart} disabled={Boolean(csv)} onClick={() => setChartView("tradingview")}>TradingView</button>
-                    </div>
-                    {csv && <span className="hint">CSV uploads use ChartLens.</span>}
-                  </div>
-                  {showCustomChart && <div className="tools">
+                  <div className="tools">
                     <div className="grp" role="group" aria-label="Chart overlays">
                       <span className="eyebrow">Overlays</span>
                       {OVERLAYS.map(([k, label, col]) => (
@@ -206,13 +199,13 @@ export default function Analyzer() {
                       <span className="eyebrow">Lower pane</span>
                       <div className="seg">{[["rsi", "RSI"], ["flow", "Order flow"]].map(([k, l]) => <button key={k} aria-pressed={pane === k} onClick={() => setPane(k)}>{l}</button>)}</div>
                     </div>
-                  </div>}
-                  {showCustomChart ? (ind ? (
+                  </div>
+                  {ind ? (
                     <Chart data={data} ind={ind} vw={vw} ov={ov} pane={pane} plan={plan} fmt={fmt} fmtTime={fmtTime} picking={picking} onPick={onPick} />
                   ) : (
                     <div className="chart-box" style={{ display: "grid", placeItems: "center" }}>{src === "error" ? <p className="err">{feed.error}</p> : <Spinner>Loading candles…</Spinner>}</div>
-                  )) : <TradingViewChart market={market} symbol={symbol} timeframe={tf} />}
-                  {showCustomChart && ind && <Legend ov={ov} ind={ind} pane={pane} hasVW={!!vw} />}
+                  )}
+                  {ind && <Legend ov={ov} ind={ind} pane={pane} hasVW={!!vw} />}
                 </div>
                 <LiveScore setup={setup} source={src} />
                 <div className="cards">
@@ -227,7 +220,7 @@ export default function Analyzer() {
               </div>
 
               <div className="col">
-                <TradePlan opts={planOpts} setOpts={setPlanOpts} plan={plan} fmt={fmt} dec={sym.d} />
+                <TradePlan opts={planOpts} setOpts={setPlanOpts} plan={plan} setup={setup} fmt={fmt} dec={sym.d} />
                 <div className="panel">
                   <div className="panel-head">
                     <div><div className="eyebrow">AI review</div><div className="ptitle">Structured report</div></div>
@@ -252,7 +245,7 @@ export default function Analyzer() {
 
         <footer className="disc">
           <strong>Educational use only.</strong> ChartLens describes market structure, smart money concepts, order flow, liquidity and risk to help you learn to read charts.
-          It does not give investment advice or recommendations and is not registered with SEBI or any regulator. Trade plans are calculated mechanically from rules you choose; they are not signals to trade.
+          It does not give investment advice or recommendations and is not registered with SEBI or any regulator. Setup scores and trade plans are calculated mechanically from fixed rules; they are not recommendations to buy or sell.
           Order flow is estimated from candle data. Demo series are synthetic. Markets carry risk; decisions are yours.
         </footer>
       </div>
@@ -310,7 +303,4 @@ function CsvDialog({ onClose, onLoad }) {
     </dialog>
   );
 }
-
-
-
 
